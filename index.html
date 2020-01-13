@@ -60,13 +60,19 @@
             flex-wrap: wrap;
             justify-content: space-between;
         }
-        iframe {
-            flex: 0 1 calc(50% - 10px);
+        .col-2 {
+            flex: 0 1 calc(50% - 20px);
             height: 100vh;
             margin-bottom: 20px;
+            margin-left: 10px;
+            margin-right: 10px;
         }
-        iframe:nth-child(2n-1) {
-            margin-right: 20px;
+        .col-3 {
+        	flex: 0 1 calc(33% - 10px);
+        	height: 100vh;
+        	margin-bottom: 20px;
+            margin-left: 5px;
+            margin-right: 5px;
         }
     </style>
 </head>
@@ -79,35 +85,89 @@
             </button>
         </form>
     </header>
-    <main>
-        <iframe src="https://www.dogedoge.com/results?q=vue" frameborder="0"></iframe>
-        <iframe src="https://www.baidu.com/s?wd=vue" frameborder="0"></iframe>
-        <iframe src="https://zzk.cnblogs.com/s/blogpost?w=vue" frameborder="0"></iframe>
-        <iframe src="https://www.toutiao.com/search/?page=1&num=10&keyword=vue" frameborder="0"></iframe>
-    </main>
+    <main id="container"></main>
     <script>
-        let searchSubmit = document.querySelector('.search_submit'),
-            searchKeywords = document.querySelector('.search_keywords'),
-            listOfIframe = document.querySelectorAll('iframe');
+        let $searchSubmit = document.querySelector('.search_submit'),
+            $searchKeywords = document.querySelector('.search_keywords'),
+            $container = document.querySelector('#container'),
+            defaultKeyword = 'vue',
+            listOfIframe = [
+            	{
+            		name: 'dogedoge',
+            		src: wd => `https://www.dogedoge.com/results?q=${wd}`
+            	},
+            	{
+            		name: 'baidu',
+            		src: wd => `https://www.baidu.com/s?wd=${wd}`
+            	},
+            	{
+            		name: '极客搜索',
+            		src: wd => `https://s.geekbang.org/search/c=0/k=${wd}/t=`
+            	},
+            	{
+            		name: '思否',
+            		src: wd => `https://segmentfault.com/search?q=${wd}`
+            	},
+            	{
+            		name: '掘金',
+            		src: wd => `https://www.baidu.com/s?wd=${wd}%20site%3Ajuejin.im`
+            	},
+            	{
+            		name: '博客园',
+            		src: wd => `https://zzk.cnblogs.com/s/blogpost?w=${wd}`
+            	},
+            	{
+            		name: '知乎',
+            		src: wd => `https://www.baidu.com/s?wd=${wd}%20site%3Azhihu.com`
+            	},
+            	{
+            		name: '简书',
+            		src: wd => `https://www.baidu.com/s?wd=vue%20site%3Ajianshu.com`
+            	},
+            	{
+            		name: '头条',
+            		src: wd => `https://www.toutiao.com/search/?page=1&num=10&keyword=${wd}`
+            	}
+            ];
 
-        function setSrc(wd) {
-            wd = encodeURIComponent(wd);
-            listOfIframe[0].setAttribute('src', 'https://www.dogedoge.com/results?q=' + wd);
-            listOfIframe[1].setAttribute('src', 'https://www.baidu.com/s?wd=' + wd);
-            listOfIframe[2].setAttribute('src', 'https://zzk.cnblogs.com/s/blogpost?w=' + wd);
-            listOfIframe[3].setAttribute('src', 'https://www.toutiao.com/search/?page=1&num=10&keyword=' + wd);
+        // 初始化
+        function init() {
+        	let tmpl = '',
+        		className = '';
+
+        	listOfIframe.forEach((item, index) => {
+        		className = (index >=4 && index <= 6) ? 'col-3' : 'col-2';
+
+        		tmpl += `<iframe class="${className}" src="${item.src(defaultKeyword)}" frameborder="0"></iframe>`;
+        	});
+        	$container.innerHTML = tmpl;
+
+        	return;
         }
 
-        searchKeywords.addEventListener('keyup', (e) => {
-            if(e.keyCode == 13) {
-                setSrc(e.target.value);
-            }
-        }); 
+        function setSrc(wd) {
+        	let $iframes = document.querySelectorAll('iframe');
 
-        searchSubmit.addEventListener('click', (e) => {
-            setSrc(searchKeywords.value);
-        });
+        	$iframes.forEach((item, index) => {
+        		item.setAttribute('src', listOfIframe[index].src(wd));
+        	});
+        }
 
+        // 主函数
+        function main() {
+        	init();
+
+        	$searchKeywords.addEventListener('keyup', (e) => {
+	            if(e.keyCode == 13) {
+	                setSrc(e.target.value);
+	            }
+	        }); 
+
+	        $searchSubmit.addEventListener('click', (e) => {
+	            setSrc(searchKeywords.value);
+	        });
+        }
+        main();
     </script>
 </body>
 </html>
