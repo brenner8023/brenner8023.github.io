@@ -28,6 +28,25 @@
             background: #ccc;
         }
 
+        .wd_list {
+        	width: 618px;
+        	background: #fff;
+        	position: absolute;
+        	top: 66px;
+        	left: 50%;
+        	transform: translateX(-50%);
+        }
+        .wd_li {
+        	height: 36px;
+        	line-height: 36px;
+        	padding-left: 6px;
+        	margin: 4px 0;
+        }
+        .wd_li:hover {
+        	cursor: pointer;
+        	background: rgb(242, 242, 242);
+        }
+
         .search_form {
             width: fit-content;
             margin: 20px auto;
@@ -84,13 +103,15 @@
                 <svg class="icon" style="width: 1em; height: 1em;vertical-align: middle;fill: currentColor;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1466"><path d="M995.830324 995.833186c-37.551478 37.555771-98.442595 37.555771-135.998366 0L690.099793 826.096728c-69.778525 44.731805-152.275014 71.438385-241.32652 71.438385C200.92894 897.535113 0.002848 696.614745 0.002848 448.770411 0.002848 200.920354 200.92894-1.4e-05 448.773273-1.4e-05c247.855781 0 448.770426 200.920368 448.770426 448.770426 0 89.047214-26.700857 171.536548-71.439816 241.333675l169.726442 169.725011C1033.386095 897.384867 1033.386095 958.277416 995.830324 995.833186L995.830324 995.833186zM448.773273 128.218472C271.747739 128.218472 128.23135 271.734861 128.23135 448.770411c0 177.031258 143.510665 320.547647 320.541923 320.547647 177.036982 0 320.547647-143.516389 320.547647-320.547647C769.32092 271.734861 625.810255 128.218472 448.773273 128.218472L448.773273 128.218472zM448.773273 128.218472" p-id="1467"></path></svg>
             </button>
         </form>
+        <ul class="wd_list"></ul>
     </header>
     <main id="container"></main>
     <script>
         let $searchSubmit = document.querySelector('.search_submit'),
             $searchKeywords = document.querySelector('.search_keywords'),
             $container = document.querySelector('#container'),
-            defaultKeyword = 'vue',
+            $wdList = document.getElementsByClassName('wd_list')[0],
+            listOfSearchData = [],
             listOfIframe = [
             	{
             		name: 'dogedoge',
@@ -132,25 +153,58 @@
 
         // 初始化
         function init() {
+        	changeIframe();
+
+        	return;
+        }
+
+        // jsonp封装并生成智能搜索提示
+        function jsonp(wd) {
+
+        	if(wd == '') {
+        		$wdList.innerHTML = '';
+        		return;
+        	}
+
+        	let $script = document.createElement('script');
+
+        	window.baiduSug = (data) => {
+        		let tmpl = '';
+
+        		for(let i = 0; i < 6; i++) {
+        			tmpl += `<li class="wd_li">${data.s[i]}</li>`;
+        		}
+        		$wdList.innerHTML = tmpl;
+        	};
+	        $script.src = `http://suggestion.baidu.com/su?wd=${encodeURIComponent(wd)}&cb=window.baiduSug`;
+	        document.head.appendChild($script);
+	        document.head.removeChild($script);
+        }
+
+        // 替换插入iframe
+        function changeIframe(wd='vue') {
         	let tmpl = '',
         		className = '';
 
         	listOfIframe.forEach((item, index) => {
         		className = (index >=4 && index <= 6) ? 'col-3' : 'col-2';
 
-        		tmpl += `<iframe class="${className}" src="${item.src(defaultKeyword)}" frameborder="0"></iframe>`;
+        		tmpl += `<iframe class="${className}" src="${item.src(wd)}" frameborder="0"></iframe>`;
         	});
         	$container.innerHTML = tmpl;
-
-        	return;
         }
 
-        function setSrc(wd) {
-        	let $iframes = document.querySelectorAll('iframe');
+        // 生成location.hash
+        function setHash(value) {
+        	let hashCode = (+new Date()).toString();
 
-        	$iframes.forEach((item, index) => {
-        		item.setAttribute('src', listOfIframe[index].src(wd));
+        	listOfSearchData.push({
+        		hashCode,
+        		wd: value
         	});
+        	window.location.hash = hashCode;
+
+        	return hashCode;
         }
 
         // 主函数
@@ -158,13 +212,39 @@
         	init();
 
         	$searchKeywords.addEventListener('keyup', (e) => {
+        		
+        		if(typeof e.stopPropgation == 'function')e.stopPropgation();
+
 	            if(e.keyCode == 13) {
-	                setSrc(e.target.value);
+	                setHash(e.target.value);
+	            } else {
+	            	jsonp(e.target.value);
 	            }
 	        }); 
-
+	        $searchKeywords.addEventListener('blur', (e) => {
+	        	if(!$wdList.hidden)setTimeout(()=>{
+	        		$wdList.hidden = true;
+	        	}, 100);
+	        });
+	        $searchKeywords.addEventListener('focus', (e) => {
+	        	if($wdList.hidden)$wdList.hidden = false;
+	        });
+	        $wdList.addEventListener('click', (e) => {
+	        	setHash(e.target.innerText);
+	        });
 	        $searchSubmit.addEventListener('click', (e) => {
-	            setSrc(searchKeywords.value);
+	            setHash($searchKeywords.value);
+	        });
+
+	        window.addEventListener('hashchange', () => {
+	        	let hashCode = window.location.hash.slice(1);
+
+	        	listOfSearchData.forEach((item) => {
+	        		if(item.hashCode == hashCode) {
+	        			changeIframe(item.wd);
+	        			$searchKeywords.value = item.wd;
+	        		}
+	        	});
 	        });
         }
         main();
