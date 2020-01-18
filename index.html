@@ -176,7 +176,7 @@
         		}
         		$wdList.innerHTML = tmpl;
         	};
-	        $script.src = `http://suggestion.baidu.com/su?wd=${encodeURIComponent(wd)}&cb=window.baiduSug`;
+	        $script.src = `https://suggestion.baidu.com/su?wd=${encodeURIComponent(wd)}&cb=window.baiduSug`;
 	        document.head.appendChild($script);
 	        document.head.removeChild($script);
         }
