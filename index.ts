@@ -1,8 +1,10 @@
-let $searchSubmit :any = document.querySelector('.search_submit'),
-    $searchInput :any = document.querySelector('.search_input'),
+let $searchSubmit :any = document.querySelector('.search_submit'), // 搜索按钮
+    $searchInput :any = document.querySelector('.search_input'), // 搜索输入框
     $container :any = document.querySelector('#container'),
-    $wdList :any = document.getElementsByClassName('wd_list')[0],
-    wdListIndex :number = 0,
+    $wdList :any = document.getElementsByClassName('wd_list')[0], // 关键词提示列表
+    $wdItem :any = document.getElementsByClassName('wd_li'), // 每个关键词提示li
+    listOfSuggestion :string[] = [], // 存储返回回来的关键词提示数组
+    suggestionIndex :number = -1, // 关键词提示数组的当前索引
     searchData :any = sessionStorage.getItem('searchData'),
     listOfSearchData :object[] = searchData == null ? [] : JSON.parse(searchData),
     listOfIframe :object[] = [
@@ -59,6 +61,7 @@ function jsonp(wd :string) :void {
 
     if(wd == '') {
         $wdList.innerHTML = '';
+        listOfSuggestion = [];
         return;
     }
 
@@ -69,9 +72,11 @@ function jsonp(wd :string) :void {
         let tmpl :string = '',
             len :number = (data.s.length >= 0 && data.s.length < 6) ? data.s.length : 6;
 
-        if(data.s.length > 0) {
+        listOfSuggestion = data.s.slice(0, len);
+
+        if(listOfSuggestion.length > 0) {
             for(let i = 0; i < len; i++) {
-                tmpl += `<li class="wd_li">${data.s[i]}</li>`;
+                tmpl += `<li class="wd_li">${listOfSuggestion[i]}</li>`;
             }
             $wdList.innerHTML = tmpl;
         }
@@ -121,12 +126,16 @@ function main() {
     init();
 
     $searchInput.addEventListener('keyup', (e :any) :void => {
-        if(e.keyCode != 13) {
+        // 输入数字和字母时执行jsonp请求
+        if((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105) || e.keyCode == 229) {
             jsonp(e.target.value);
-        } else {
+        } else if(e.keyCode == 13) {
+            // 输入enter键时修改location.hash
             setHash(e.target.value);
         }
     });
+
+    // 输入框失去焦点时隐藏关键词提示列表
     $searchInput.addEventListener('blur', () => {
         if(!$wdList.hidden)setTimeout(()=>{
             $wdList.hidden = true;
@@ -135,11 +144,28 @@ function main() {
     $searchInput.addEventListener('focus', () => {
         if($wdList.hidden)$wdList.hidden = false;
     });
-    $wdList.addEventListener('click', (e :any) => {
-        setHash(e.target.innerText);
+    $searchInput.addEventListener('keydown', (e :any) => {
+        let len = listOfSuggestion.length;
+        if(len == 0) return;
+
+        if(e.keyCode == 38) { // 输入上方向键
+            e.preventDefault();
+            if(suggestionIndex >= 0)$wdItem[suggestionIndex].className = 'wd_li';
+            suggestionIndex = (suggestionIndex == 0) ? len - 1 : suggestionIndex-1; 
+            $wdItem[suggestionIndex].className = 'wd_li wd_active';
+            $searchInput.value = $wdItem[suggestionIndex].innerText;
+            
+        } else if(e.keyCode == 40) { // 输入下方向键
+            e.preventDefault();
+            if(suggestionIndex >= 0)$wdItem[suggestionIndex].className = 'wd_li';
+            suggestionIndex = (suggestionIndex == len - 1) ? 0 : suggestionIndex+1;
+            $wdItem[suggestionIndex].className = 'wd_li wd_active'; 
+            $searchInput.value = $wdItem[suggestionIndex].innerText;
+        }
     });
-    $searchSubmit.addEventListener('click', (e :any) => {
-        setHash($searchInput.value);
+    document.addEventListener('click', (e :any) => {
+        if($wdList.contains(e.target)) setHash(e.target.innerText);
+        else if($searchSubmit.contains(e.target)) setHash($searchInput.value);
     });
     window.addEventListener('hashchange', () => {
         let hashCode = window.location.hash.slice(1);
