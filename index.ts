@@ -1,11 +1,11 @@
-let $searchSubmit :any = document.querySelector('.search_submit'), // 搜索按钮
-    $searchInput :any = document.querySelector('.search_input'), // 搜索输入框
-    $container :any = document.querySelector('#container'),
-    $wdList :any = document.getElementsByClassName('wd_list')[0], // 关键词提示列表
+let $searchSubmit = document.querySelector('.search_submit') as HTMLElement, // 搜索按钮
+    $searchInput = document.querySelector('.search_input') as HTMLInputElement, // 搜索输入框
+    $container = document.querySelector('#container') as HTMLElement,
+    $wdList = document.getElementsByClassName('wd_list')[0] as HTMLElement, // 关键词提示列表
     $wdItem :any = document.getElementsByClassName('wd_li'), // 每个关键词提示li
     listOfSuggestion :string[] = [], // 存储返回回来的关键词提示数组
     suggestionIndex :number = -1, // 关键词提示数组的当前索引
-    searchData :any = sessionStorage.getItem('searchData'),
+    searchData :string = sessionStorage.getItem('searchData'),
     listOfSearchData :object[] = searchData == null ? [] : JSON.parse(searchData),
     listOfIframe :object[] = [
         {
@@ -66,25 +66,28 @@ function jsonp(wd :string) :void {
     }
 
     let $script = document.createElement('script');
-
-    window['baiduSug'] = (data :any) :void => {
-
-        let tmpl :string = '',
-            len :number = (data.s.length >= 0 && data.s.length < 6) ? data.s.length : 6;
-
-        listOfSuggestion = data.s.slice(0, len);
-
-        if(listOfSuggestion.length > 0) {
-            for(let i = 0; i < len; i++) {
-                tmpl += `<li class="wd_li">${listOfSuggestion[i]}</li>`;
-            }
-            $wdList.innerHTML = tmpl;
-        }
-    };
+    
     $script.src = `https://suggestion.baidu.com/su?wd=${encodeURIComponent(wd)}&cb=window.baiduSug`;
     document.head.appendChild($script);
     document.head.removeChild($script);
+
+    // 发出jsonp请求，重置suggestionIndex
+    suggestionIndex = -1;
 }
+window['baiduSug'] = (data :any) :void => {
+
+    let tmpl :string = '',
+        len :number = (data.s.length >= 0 && data.s.length < 6) ? data.s.length : 6;
+
+    listOfSuggestion = data.s.slice(0, len);
+
+    if(listOfSuggestion.length > 0) {
+        for(let i = 0; i < len; i++) {
+            tmpl += `<li class="wd_li">${listOfSuggestion[i]}</li>`;
+        }
+        $wdList.innerHTML = tmpl;
+    }
+};
 
 /**
  * 根据输入的关键词替换生成对应的iframe
@@ -125,14 +128,10 @@ function setHash(value :string) :string | void {
 function main() {
     init();
 
-    $searchInput.addEventListener('keyup', (e :any) :void => {
-        // 输入数字和字母时执行jsonp请求
-        if((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105) || e.keyCode == 229) {
-            jsonp(e.target.value);
-        } else if(e.keyCode == 13) {
-            // 输入enter键时修改location.hash
-            setHash(e.target.value);
-        }
+    $searchInput.addEventListener('input', (e :any) :void => {
+        
+        jsonp(e.target.value);
+
     });
 
     // 输入框失去焦点时隐藏关键词提示列表

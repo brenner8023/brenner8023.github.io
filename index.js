@@ -59,20 +59,22 @@ function jsonp(wd) {
         return;
     }
     var $script = document.createElement('script');
-    window['baiduSug'] = function (data) {
-        var tmpl = '', len = (data.s.length >= 0 && data.s.length < 6) ? data.s.length : 6;
-        listOfSuggestion = data.s.slice(0, len);
-        if (listOfSuggestion.length > 0) {
-            for (var i = 0; i < len; i++) {
-                tmpl += "<li class=\"wd_li\">" + listOfSuggestion[i] + "</li>";
-            }
-            $wdList.innerHTML = tmpl;
-        }
-    };
     $script.src = "https://suggestion.baidu.com/su?wd=" + encodeURIComponent(wd) + "&cb=window.baiduSug";
     document.head.appendChild($script);
     document.head.removeChild($script);
+    // 发出jsonp请求，重置suggestionIndex
+    suggestionIndex = -1;
 }
+window['baiduSug'] = function (data) {
+    var tmpl = '', len = (data.s.length >= 0 && data.s.length < 6) ? data.s.length : 6;
+    listOfSuggestion = data.s.slice(0, len);
+    if (listOfSuggestion.length > 0) {
+        for (var i = 0; i < len; i++) {
+            tmpl += "<li class=\"wd_li\">" + listOfSuggestion[i] + "</li>";
+        }
+        $wdList.innerHTML = tmpl;
+    }
+};
 /**
  * 根据输入的关键词替换生成对应的iframe
  * @param wd 用户输入的关键词
@@ -105,15 +107,8 @@ function setHash(value) {
  */
 function main() {
     init();
-    $searchInput.addEventListener('keyup', function (e) {
-        // 输入数字和字母时执行jsonp请求
-        if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105) || e.keyCode == 229) {
-            jsonp(e.target.value);
-        }
-        else if (e.keyCode == 13) {
-            // 输入enter键时修改location.hash
-            setHash(e.target.value);
-        }
+    $searchInput.addEventListener('input', function (e) {
+        jsonp(e.target.value);
     });
     // 输入框失去焦点时隐藏关键词提示列表
     $searchInput.addEventListener('blur', function () {
