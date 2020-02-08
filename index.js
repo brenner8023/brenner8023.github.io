@@ -1,10 +1,11 @@
+;
 var $searchSubmit = document.querySelector('.search_submit'), // 搜索按钮
 $searchInput = document.querySelector('.search_input'), // 搜索输入框
 $container = document.querySelector('#container'), $wdList = document.getElementsByClassName('wd_list')[0], // 关键词提示列表
 $wdItem = document.getElementsByClassName('wd_li'), // 每个关键词提示li
 listOfSuggestion = [], // 存储返回回来的关键词提示数组
 suggestionIndex = -1, // 关键词提示数组的当前索引
-searchData = sessionStorage.getItem('searchData'), listOfSearchData = searchData == null ? [] : JSON.parse(searchData), listOfIframe = [
+searchData = sessionStorage.getItem('searchData'), listOfSearchData = (searchData == null) ? [] : JSON.parse(searchData), listOfIframe = [
     {
         name: 'dogedoge',
         src: function (wd) { return "https://www.dogedoge.com/results?q=" + encodeURIComponent(wd); }

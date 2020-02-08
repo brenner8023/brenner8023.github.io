@@ -1,13 +1,28 @@
-let $searchSubmit = document.querySelector('.search_submit') as HTMLElement, // 搜索按钮
-    $searchInput = document.querySelector('.search_input') as HTMLInputElement, // 搜索输入框
-    $container = document.querySelector('#container') as HTMLElement,
+interface Site {
+    name: string
+    src: (wd: string) => string
+};
+interface Word {
+    hashCode: string
+    wd: string
+}
+interface InputEvent extends Event {
+    target: HTMLInputElement
+}
+interface ClickEvent extends MouseEvent {
+    target: HTMLElement
+}
+
+let $searchSubmit: HTMLElement = document.querySelector('.search_submit'), // 搜索按钮
+    $searchInput: HTMLInputElement = document.querySelector('.search_input'), // 搜索输入框
+    $container: HTMLElement = document.querySelector('#container'),
     $wdList = document.getElementsByClassName('wd_list')[0] as HTMLElement, // 关键词提示列表
-    $wdItem :any = document.getElementsByClassName('wd_li'), // 每个关键词提示li
-    listOfSuggestion :string[] = [], // 存储返回回来的关键词提示数组
-    suggestionIndex :number = -1, // 关键词提示数组的当前索引
-    searchData :string = sessionStorage.getItem('searchData'),
-    listOfSearchData :object[] = searchData == null ? [] : JSON.parse(searchData),
-    listOfIframe :object[] = [
+    $wdItem: HTMLCollectionOf<Element> = document.getElementsByClassName('wd_li'), // 每个关键词提示li
+    listOfSuggestion: string[] = [], // 存储返回回来的关键词提示数组
+    suggestionIndex: number = -1, // 关键词提示数组的当前索引
+    searchData: string = sessionStorage.getItem('searchData'),
+    listOfSearchData: Array<Word> = (searchData == null) ? [] : JSON.parse(searchData),
+    listOfIframe: Array<Site> = [
         {
             name: 'dogedoge',
             src: wd => `https://www.dogedoge.com/results?q=${encodeURIComponent(wd)}`
@@ -121,14 +136,13 @@ function setHash(value :string) :string | void {
 
     return hashCode;
 }
-
 /**
  * 主函数
  */
 function main() {
     init();
 
-    $searchInput.addEventListener('input', (e :any) :void => {
+    $searchInput.addEventListener('input', (e: InputEvent) :void => {
         
         jsonp(e.target.value);
 
@@ -143,7 +157,7 @@ function main() {
     $searchInput.addEventListener('focus', () => {
         if($wdList.hidden)$wdList.hidden = false;
     });
-    $searchInput.addEventListener('keydown', (e :any) => {
+    $searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
         let len = listOfSuggestion.length;
         if(len == 0) return;
 
@@ -152,17 +166,17 @@ function main() {
             if(suggestionIndex >= 0)$wdItem[suggestionIndex].className = 'wd_li';
             suggestionIndex = (suggestionIndex == 0) ? len - 1 : suggestionIndex-1; 
             $wdItem[suggestionIndex].className = 'wd_li wd_active';
-            $searchInput.value = $wdItem[suggestionIndex].innerText;
+            $searchInput.value = ($wdItem[suggestionIndex] as HTMLElement).innerText;
             
         } else if(e.keyCode == 40) { // 输入下方向键
             e.preventDefault();
             if(suggestionIndex >= 0)$wdItem[suggestionIndex].className = 'wd_li';
             suggestionIndex = (suggestionIndex == len - 1) ? 0 : suggestionIndex+1;
             $wdItem[suggestionIndex].className = 'wd_li wd_active'; 
-            $searchInput.value = $wdItem[suggestionIndex].innerText;
+            $searchInput.value = ($wdItem[suggestionIndex] as HTMLElement).innerText;
         }
     });
-    document.addEventListener('click', (e :any) => {
+    document.addEventListener('click', (e: ClickEvent) => {
         if($wdList.contains(e.target)) setHash(e.target.innerText);
         else if($searchSubmit.contains(e.target)) setHash($searchInput.value);
     });
